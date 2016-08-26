@@ -52,6 +52,8 @@ If TRUE, each class's inverse covariance matrix is returned whole.  If FALSE, th
   \item{truncate}{
 Defaults to 1e-5.  At convergence, all values of theta below this number will be set to zero.  
 }
+  \item{partialcor} {Reweight lambda to work on scale of partial
+    correlations, as per eq 9.22 in paper}
 }
 \details{
 This function can solve both the Fused Graphical Lasso and the Group Graphical Lasso.  

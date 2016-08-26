@@ -1,6 +1,8 @@
 
 JGL <-
-function(Y,penalty="fused",lambda1,lambda2,rho=1,weights="equal",penalize.diagonal=FALSE,maxiter=500,tol=1e-5,warm=NULL,return.whole.theta=FALSE, screening="fast",truncate=1e-5)
+    function(Y,penalty="fused",lambda1,lambda2,rho=1,weights="equal",penalize.diagonal=FALSE,
+             maxiter=500,tol=1e-5,warm=NULL,return.whole.theta=FALSE, screening="fast",truncate=1e-5,
+             partialcor=FALSE)
 {
 	## initialize:
 	p = dim(Y[[1]])[2]
@@ -157,7 +159,15 @@ function(Y,penalty="fused",lambda1,lambda2,rho=1,weights="equal",penalize.diagon
 	}
 	if(sum(unconnected)==0) {theta.unconnected = NULL}
 
-	## now run JGL on each block of the connected nodes to fill in theta:
+    if (partialcor) {
+        ## need to compute the scaling factors for new lambdas
+        ## Paper recommends using all the data and graphical lasso on all the data
+        cY <- do.call(rbind, Y)
+        gg <- glasso::glasso(cov(cY), lambda1, penalize.diagonal=penalize.diagonal)$wi
+        ## Only need the diagonals of this
+    }
+    
+    ## now run JGL on each block of the connected nodes to fill in theta:
 	if(length(blocklist)>0){
 	for(i in 1:length(blocklist)){
 		# the variables in the block
@@ -177,7 +187,15 @@ function(Y,penalty="fused",lambda1,lambda2,rho=1,weights="equal",penalize.diagon
  	 	lam1.bl = penalty.as.matrix(lam1.bl,dim(Ybl[[1]])[2],penalize.diagonal=penalize.diagonal)
 		if(penalty=="fused") {lam2.bl = penalty.as.matrix(lam2.bl,dim(Ybl[[1]])[2],penalize.diagonal=TRUE)}
 		if(penalty=="group") {lam2.bl = penalty.as.matrix(lam2.bl,dim(Ybl[[1]])[2],penalize.diagonal=penalize.diagonal)}
-    
+
+            if (partialcor) {
+                ## Apply the scaling to lambda matrices
+                sigmas <- diag(gg)[bl]
+                scaling <- sqrt(sigmas %*% t(sigmas))
+                lam1.bl <- lam1.bl/scaling
+                lam2.bl <- lam2.bl/scaling
+                }
+            
 		# implement warm start if desired
 		if(length(warm)==0) {warm.bl = NULL}
 		if(length(warm)>0)
